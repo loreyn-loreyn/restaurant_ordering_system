@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('Description', 255);
             $table->decimal('Price', 10, 2);
             $table->string('DishCode', 50);
+            // Controlled from the Kitchen side. When false, the dish card
+            // is dimmed/disabled and sorted to the bottom on the cashier menu.
+            $table->boolean('Availability')->default(true);
         });
     }
 

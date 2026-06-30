@@ -13,7 +13,6 @@ return new class extends Migration
             $table->string('Type', 50);
             $table->string('Reason', 150);
             $table->decimal('Amount', 10, 2);
-            $table->date('DateApplied');
         });
     }
 

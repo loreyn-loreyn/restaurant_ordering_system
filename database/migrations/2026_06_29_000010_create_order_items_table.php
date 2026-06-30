@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('Quantity');
             $table->char('ItemStatus', 1);
             $table->string('Choice', 150);
-            $table->string('SpecialInstruction', 255);
+            $table->string('SpecialInstruction', 255) -> nullable();
         });
     }
 

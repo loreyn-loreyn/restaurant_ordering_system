@@ -15,7 +15,7 @@ return new class extends Migration
                 ->onUpdate('cascade')->onDelete('cascade');
             $table->string('LastName', 100);
             $table->string('FirstName', 100);
-            $table->string('MiddleName', 100);
+            $table->string('MiddleName', 100)->nullable();
             $table->integer('Age');
             $table->date('BirthDate');
             $table->char('Sex', 1);
