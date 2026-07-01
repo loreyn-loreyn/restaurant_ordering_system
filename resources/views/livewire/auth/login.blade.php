@@ -32,7 +32,20 @@
                             wire:click="togglePassword"
                             class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                         >
-                            &#128065;
+                            @if ($showPassword)
+                                <!-- Eye Open Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644 10.95 10.95 0 0 1 18.928 0 1.012 1.012 0 0 1 0 .644 10.95 10.95 0 0 1-18.928 0Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                            @else
+                                <!-- Eye Closed Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644 10.95 10.95 0 0 1 18.928 0 1.012 1.012 0 0 1 0 .644 10.95 10.95 0 0 1-18.928 0Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                    <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                </svg>
+                            @endif
                         </button>
                     </div>
                     @error('password')

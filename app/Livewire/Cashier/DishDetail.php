@@ -74,17 +74,17 @@ class DishDetail extends Component
 
         // If this dish (with the same choice) is already in the cart, bump the quantity
         // instead of creating a duplicate line.
+        $instruction = $this->specialInstruction !== '' ? $this->specialInstruction : null;
+
         $existing = OrderItem::where('OrderID', $orderId)
             ->where('DishID', $this->dish->DishID)
             ->where('Choice', $this->choice)
+            ->where('SpecialInstruction', $instruction)
             ->first();
 
         if ($existing) {
             $existing->update([
                 'Quantity' => $existing->Quantity + $this->quantity,
-                'SpecialInstruction' => $this->specialInstruction !== ''
-                    ? $this->specialInstruction
-                    : $existing->SpecialInstruction,
             ]);
         } else {
             OrderItem::create([

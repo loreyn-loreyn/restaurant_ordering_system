@@ -8,6 +8,8 @@ use App\Livewire\Cashier\OrderType;
 use App\Livewire\Cashier\Menu;
 use App\Livewire\Cashier\DishDetail;
 use App\Livewire\Cashier\Cart;
+use App\Livewire\Kitchen\Orders as KitchenOrders;
+use App\Livewire\Kitchen\Availability as KitchenAvailability;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,13 +73,8 @@ Route::middleware('auth')->group(function () {
 
     // Kitchen Staff
     Route::middleware('role:Kitchen Staff')->prefix('kitchen')->group(function () {
-        Route::get('/orders', function () {
-            return view('kitchen.orders');
-        })->name('kitchen.orders');
-
-        Route::get('/availability', function () {
-            return view('kitchen.availability');
-        })->name('kitchen.availability');
+        Route::get('/orders', KitchenOrders::class)->name('kitchen.orders');
+        Route::get('/availability', KitchenAvailability::class)->name('kitchen.availability');
     });
 });
 

@@ -75,6 +75,19 @@ class Cart extends Component
         $this->refreshOrder();
     }
 
+    public function setQuantity(int $orderItemId, int $quantity): void
+    {
+        $item = OrderItem::where('OrderID', $this->order->OrderID)->findOrFail($orderItemId);
+
+        if ($quantity <= 0) {
+            $item->delete();
+        } else {
+            $item->update(['Quantity' => $quantity]);
+        }
+
+        $this->refreshOrder();
+    }
+
     public function removeItem(int $orderItemId): void
     {
         OrderItem::where('OrderID', $this->order->OrderID)->where('OrderItemID', $orderItemId)->delete();
@@ -125,6 +138,31 @@ class Cart extends Component
         $this->refreshOrder();
         $this->showDiscountModal = false;
         $this->showPaymentModal = true;
+    }
+
+    /**
+     * From the Payment modal, go back to the Discount modal.
+     * Previously picked type/reason are preserved in component state.
+     */
+    public function backToDiscount(): void
+    {
+        $this->showPaymentModal = false;
+        $this->showDiscountModal = true;
+    }
+
+    /**
+     * Live preview of the discount amount for the currently selected reason,
+     * without needing to persist to the DB first.
+     */
+    public function getPreviewDiscountAmountProperty(): float
+    {
+        if (! $this->discountId) {
+            return 0.0;
+        }
+
+        $discount = Discount::find($this->discountId);
+
+        return $discount ? (float) $discount->Amount : 0.0;
     }
 
     // ---------------------------------------------------------------
@@ -184,6 +222,11 @@ class Cart extends Component
 
         if ($this->paymentType === 'Cash') {
             $this->validate(['renderedAmount' => 'required|numeric|min:0']);
+
+            if ((float) $this->renderedAmount < $this->order->total_after_discount) {
+                $this->addError('renderedAmount', 'Amount must be at least P' . number_format($this->order->total_after_discount, 2) . '.');
+                return;
+            }
         } else {
             $this->validate(['referenceNo' => 'required']);
         }

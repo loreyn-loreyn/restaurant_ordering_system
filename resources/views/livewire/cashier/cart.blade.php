@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-white relative flex flex-col">
     <div class="flex items-center px-6 py-4 border-b shrink-0">
-        <button wire:click="goToMenu" class="text-slate-600 mr-3 text-lg">&#8592;</button>
-        <h1 class="text-2xl font-semibold">Cart</h1>
+        <button wire:click="goToMenu" class="text-slate-600 mr-3 text-base">&#8592;</button>
+        <h1 class="text-base font-semibold">Cart</h1>
     </div>
 
     {{-- Scrollable item list, padded at the bottom so the fixed footer never covers content --}}
@@ -63,21 +63,34 @@
                     @pointercancel="onEnd()"
                 >
                     <div class="flex items-center gap-3">
-                        <div class="bg-slate-200 w-14 h-14 flex items-center justify-center rounded text-slate-400 text-xl">&#128247;</div>
+                        <a
+                            href="{{ route('cashier.dish', $item->dish) }}"
+                            wire:navigate
+                            class="bg-slate-200 w-14 h-14 flex items-center justify-center rounded text-slate-400 text-xl shrink-0"
+                            @pointerdown.stop
+                        >&#128247;</a>
                         <div>
-                            <p class="font-medium text-base">{{ $item->dish->DishName }}</p>
+                            <a
+                                href="{{ route('cashier.dish', $item->dish) }}"
+                                wire:navigate
+                                class="font-medium text-base hover:underline"
+                                @pointerdown.stop
+                            >{{ $item->dish->DishName }}</a>
                             <p class="text-sm text-slate-500">${{ number_format($item->dish->Price, 2) }} &times; {{ $item->Quantity }}</p>
                             @if ($item->Choice)
                                 <p class="text-sm text-slate-400">{{ $item->Choice }}</p>
+                            @endif
+                            @if ($item->SpecialInstruction)
+                                <p class="text-xs text-slate-400 italic">&ldquo;{{ $item->SpecialInstruction }}&rdquo;</p>
                             @endif
                         </div>
                     </div>
 
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-2">
-                            <button wire:click="decrement({{ $item->OrderItemID }})" class="w-7 h-7 rounded border border-slate-300 text-sm">-</button>
+                            <button wire:click="decrement({{ $item->OrderItemID }})" @pointerdown.stop class="w-7 h-7 rounded border border-slate-300 text-sm">-</button>
                             <span class="w-6 text-center text-base">{{ $item->Quantity }}</span>
-                            <button wire:click="increment({{ $item->OrderItemID }})" class="w-7 h-7 rounded border border-slate-300 text-sm">+</button>
+                            <button wire:click="increment({{ $item->OrderItemID }})" @pointerdown.stop class="w-7 h-7 rounded border border-slate-300 text-sm">+</button>
                         </div>
                         <span class="text-base font-medium w-20 text-right">${{ number_format($item->line_total, 2) }}</span>
                     </div>
@@ -135,36 +148,44 @@
 
                 @if ($discountType !== 'None')
                     <label class="block text-sm text-slate-600 mb-1">Reason:</label>
-                    <select wire:model="discountId" class="w-full border rounded px-2 py-1 mb-4 text-sm">
-                        <option value="">None</option>
+                    <select wire:model.live="discountId" class="w-full border rounded px-2 py-1 mb-4 text-sm">
+                        <option value="">— Select reason —</option>
                         @foreach ($this->discountOptions as $option)
-                            <option value="{{ $option->DiscountID }}">{{ $option->Reason }}</option>
+                            <option value="{{ $option->DiscountID }}">
+                                {{ $option->Reason }} (&#8369;{{ number_format($option->Amount, 2) }} off)
+                            </option>
                         @endforeach
                     </select>
                 @endif
 
                 <div class="text-sm space-y-1 mb-4">
-                    <p>Amount to pay: <span class="font-medium">${{ number_format($order->subtotal, 2) }}</span></p>
+                    <p>Amount to pay: <span class="font-medium">&#8369;{{ number_format($order->subtotal, 2) }}</span></p>
                     <p>Discounted Amount:
                         <span class="font-medium">
-                            ${{ number_format($order->subtotal - $order->total_after_discount, 2) }}
+                            &#8369;{{ number_format($this->previewDiscountAmount, 2) }}
                         </span>
                     </p>
                     <p>To pay after Discount:
-                        <span class="font-medium">${{ number_format($order->total_after_discount, 2) }}</span>
+                        <span class="font-medium">
+                            &#8369;{{ number_format(max($order->subtotal - $this->previewDiscountAmount, 0), 2) }}
+                        </span>
                     </p>
                 </div>
 
                 <div class="flex gap-3">
-                    <button wire:click="endTransaction" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded text-sm">
-                        End transaction
+                    <button disabled class="flex-1 bg-slate-300 text-white py-2 rounded text-sm cursor-not-allowed opacity-50">
+                        Back
                     </button>
                     @if ($discountType === 'None')
                         <button wire:click="skipDiscount" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded text-sm">
                             Proceed
                         </button>
                     @else
-                        <button wire:click="applyDiscount" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded text-sm">
+                        <button
+                            wire:click="applyDiscount"
+                            @disabled(! $discountId)
+                            class="flex-1 bg-slate-600 hover:bg-slate-700 disabled:bg-slate-300 text-white py-2 rounded text-sm"
+                        >
                             Proceed
                         </button>
                     @endif
@@ -190,7 +211,7 @@
                     </button>
 
                     <h2 class="text-xl font-semibold mb-1 text-center">Payment</h2>
-                    <p class="text-sm text-center mb-4">To Pay: ${{ number_format($order->total_after_discount, 2) }}</p>
+                    <p class="text-sm text-center mb-4">To Pay: &#8369;{{ number_format($order->total_after_discount, 2) }}</p>
 
                     <label class="block text-sm text-slate-600 mb-1">Type:</label>
                     <select wire:model.live="paymentType" class="w-full border rounded px-2 py-1 mb-4 text-sm">
@@ -204,8 +225,13 @@
                             type="text" readonly
                             value="{{ $renderedAmount }}"
                             placeholder="Enter Rendered Amount"
-                            class="w-full border rounded px-2 py-1 mb-3 text-sm bg-slate-50"
+                            class="w-full border rounded px-2 py-1 mb-1 text-sm bg-slate-50"
                         >
+                        @error('renderedAmount')
+                            <p class="text-red-500 text-xs mb-3">{{ $message }}</p>
+                        @else
+                            <div class="mb-3"></div>
+                        @enderror
                     @else
                         <label class="block text-sm text-slate-600 mb-1">Reference No.:</label>
                         <input
@@ -220,16 +246,16 @@
                         @foreach (['1','2','3','4','5','6','7','8','9'] as $digit)
                             <button wire:click="pressKey('{{ $digit }}')" class="bg-slate-600 hover:bg-slate-700 text-white py-2 rounded">{{ $digit }}</button>
                         @endforeach
-                        <button wire:click="clearKeypad" class="bg-slate-300 hover:bg-slate-400 text-white py-2 rounded text-xs">C</button>
+                        <button wire:click="clearKeypad" class="bg-slate-400 hover:bg-slate-500 text-white py-2 rounded text-xs">C</button>
                         <button wire:click="pressKey('0')" class="bg-slate-600 hover:bg-slate-700 text-white py-2 rounded">0</button>
                         <button wire:click="pressKey('.')" class="bg-slate-600 hover:bg-slate-700 text-white py-2 rounded">.</button>
                     </div>
 
-                    <p class="text-sm mb-4">Change: ${{ number_format($this->change, 2) }}</p>
+                    <p class="text-sm mb-4">Change: &#8369;{{ number_format($this->change, 2) }}</p>
 
                     <div class="flex gap-3">
-                        <button wire:click="endTransaction" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded text-sm">
-                            End transaction
+                        <button wire:click="backToDiscount" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded text-sm">
+                            Back
                         </button>
                         <button wire:click="proceedPayment" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded text-sm">
                             Proceed
