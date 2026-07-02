@@ -32,7 +32,7 @@ class Orders extends Component
 
     /**
      * Advance a single item through the kitchen workflow:
-     *   R (received) → P (preparing) → S (served/ready)
+     *   S (start) → P (preparing) → R (ready)
      */
     public function advanceStatus(int $orderItemId): void
     {
@@ -67,6 +67,7 @@ class Orders extends Component
         }
 
         $order->update(['OrderStatus' => false]);
+        $order->items()->update(['ItemStatus' => 'S']);
 
         $this->activeOrderId = null;
     }

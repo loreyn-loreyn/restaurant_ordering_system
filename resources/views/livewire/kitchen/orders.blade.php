@@ -3,7 +3,7 @@
 
     {{-- ── Sidebar ─────────────────────────────────────────────────── --}}
     <aside class="w-48 bg-slate-700 text-white flex flex-col py-6 shrink-0">
-        <h1 class="px-6 text-lg font-semibold mb-6">Kitchen</h1>
+        <h1 class="px-6 text-xl font-semibold mb-6">Kitchen</h1>
 
         <a href="{{ route('kitchen.orders') }}" wire:navigate
            class="flex items-center gap-3 px-6 py-3 bg-slate-600 text-white font-medium text-sm">

@@ -19,9 +19,12 @@
             </button>
         @endforeach
 
-        <div class="mt-auto px-6 pt-6">
-            <button wire:click="signOut" class="text-sm text-slate-300 hover:text-white">
-                &#8592; Sign Out
+        <div class="mt-auto px-6 pt-6 flex flex-col gap-2">
+            <button wire:click="changeOrderType" class="text-sm text-slate-300 hover:text-white text-left">
+                Change Order Type
+            </button>
+            <button wire:click="signOut" class="text-sm text-slate-300 hover:text-white text-left">
+                Sign Out
             </button>
         </div>
     </aside>

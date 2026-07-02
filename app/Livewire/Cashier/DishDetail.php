@@ -3,8 +3,6 @@
 namespace App\Livewire\Cashier;
 
 use App\Models\Dish;
-use App\Models\Order;
-use App\Models\OrderItem;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -23,7 +21,7 @@ class DishDetail extends Component
 
     public function mount(Dish $dish)
     {
-        if (! session('current_order_id')) {
+        if (! session('current_order_type')) {
             $this->redirectRoute('cashier.order-type', navigate: true);
             return;
         }
@@ -43,59 +41,56 @@ class DishDetail extends Component
         }
     }
 
-    /**
-     * Adds the current selection to the cart (order_items) and
-     * sends the cashier back to the menu they came from.
-     */
     public function addToCart(): void
     {
         $this->saveItem();
-
         $this->redirectRoute('cashier.dishes', navigate: true);
     }
 
-    /**
-     * Adds the current selection to the cart, then jumps straight to the
-     * Cart page with the Discounts & Comps modal opened, mirroring the
-     * "buy just this one item" flow from the wireframes.
-     */
     public function proceedToPayment(): void
     {
         $this->saveItem();
-
         session(['open_discount_modal' => true]);
-
         $this->redirectRoute('cashier.cart', navigate: true);
     }
 
+    /**
+     * Saves the item into the session cart only — no DB writes here.
+     * The cart is a list of arrays stored under 'cart_items' in session.
+     */
     protected function saveItem(): void
     {
-        $orderId = session('current_order_id');
-
-        // If this dish (with the same choice) is already in the cart, bump the quantity
-        // instead of creating a duplicate line.
         $instruction = $this->specialInstruction !== '' ? $this->specialInstruction : null;
+        $items = session('cart_items', []);
 
-        $existing = OrderItem::where('OrderID', $orderId)
-            ->where('DishID', $this->dish->DishID)
-            ->where('Choice', $this->choice)
-            ->where('SpecialInstruction', $instruction)
-            ->first();
-
-        if ($existing) {
-            $existing->update([
-                'Quantity' => $existing->Quantity + $this->quantity,
-            ]);
-        } else {
-            OrderItem::create([
-                'OrderID' => $orderId,
-                'DishID' => $this->dish->DishID,
-                'Quantity' => $this->quantity,
-                'ItemStatus' => 'R', // received into the cart
-                'Choice' => $this->choice,
-                'SpecialInstruction' => $this->specialInstruction !== '' ? $this->specialInstruction : null,
-            ]);
+        // Find an existing line with the same dish + choice + instruction
+        $found = false;
+        foreach ($items as &$item) {
+            if (
+                $item['dish_id'] === $this->dish->DishID &&
+                $item['choice'] === $this->choice &&
+                $item['special_instruction'] === $instruction
+            ) {
+                $item['quantity'] += $this->quantity;
+                $found = true;
+                break;
+            }
         }
+        unset($item);
+
+        if (! $found) {
+            $items[] = [
+                'key'                => uniqid(),
+                'dish_id'            => $this->dish->DishID,
+                'dish_name'          => $this->dish->DishName,
+                'price'              => (float) $this->dish->Price,
+                'quantity'           => $this->quantity,
+                'choice'             => $this->choice,
+                'special_instruction'=> $instruction,
+            ];
+        }
+
+        session(['cart_items' => $items]);
     }
 
     public function render()

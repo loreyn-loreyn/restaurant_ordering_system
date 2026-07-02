@@ -11,7 +11,7 @@ class Dish extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'CategoryID', 'DishName', 'Description', 'Price', 'DishCode', 'Availability',
+        'CategoryID', 'DishName', 'Description', 'Price', 'DishCode', 'Photo', 'Availability',
     ];
 
     protected $casts = [
@@ -32,6 +32,11 @@ class Dish extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class, 'DishID', 'DishID');
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->Photo ? asset('storage/'.$this->Photo) : null;
     }
 
     /**

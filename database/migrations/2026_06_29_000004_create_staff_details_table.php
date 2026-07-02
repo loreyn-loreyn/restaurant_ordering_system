@@ -10,12 +10,21 @@ return new class extends Migration
     {
         Schema::create('staff_details', function (Blueprint $table) {
             $table->string('StaffID', 20)->primary();
-            $table->foreignId('UserID')
+            // Nullable: a manager-submitted staff record has no linked account
+            // until an Admin reviews it and creates the login (users row).
+            $table->foreignId('UserID')->nullable()
                 ->constrained('users', 'UserID')
                 ->onUpdate('cascade')->onDelete('cascade');
+            // The role the Manager assigns at intake — independent of the
+            // account's RoleID, which Admin sets when the login is created.
+            // Also drives the StaffID prefix (e.g. Cashier -> C001).
+            $table->foreignId('RoleID')->nullable()
+                ->constrained('roles', 'RoleID')
+                ->onUpdate('cascade')->onDelete('set null');
             $table->string('LastName', 100);
             $table->string('FirstName', 100);
             $table->string('MiddleName', 100)->nullable();
+            $table->string('Photo', 255)->nullable();
             $table->integer('Age');
             $table->date('BirthDate');
             $table->char('Sex', 1);

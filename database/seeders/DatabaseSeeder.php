@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             ['RoleID' => 2, 'RoleName' => 'Manager'],
             ['RoleID' => 3, 'RoleName' => 'Cashier'],
             ['RoleID' => 4, 'RoleName' => 'Kitchen Staff'],
+            ['RoleID' => 5, 'RoleName' => 'Server'],
         ]);
 
         // ---------------------------------------------------------
@@ -72,37 +73,37 @@ class DatabaseSeeder extends Seeder
         // ---------------------------------------------------------
         DB::table('staff_details')->insert([
             [
-                'StaffID' => 'A001', 'UserID' => 1, 'LastName' => 'Dela Cruz', 'FirstName' => 'Juan',
+                'StaffID' => 'A001', 'UserID' => 1, 'RoleID' => 1, 'LastName' => 'Dela Cruz', 'FirstName' => 'Juan',
                 'MiddleName' => 'Santos', 'Age' => 35, 'BirthDate' => '1990-05-12', 'Sex' => 'M',
                 'BirthPlace' => 'Manila', 'Nationality' => 'Filipino', 'Address' => '123 Rizal St, Manila',
                 'ContactNumber' => '09171234567', 'Email' => 'juan.delacruz@example.com', 'HiredDate' => '2026-01-05',
             ],
             [
-                'StaffID' => 'M004', 'UserID' => 2, 'LastName' => 'Lim', 'FirstName' => 'Ana',
+                'StaffID' => 'M004', 'UserID' => 2, 'RoleID' => 2, 'LastName' => 'Lim', 'FirstName' => 'Ana',
                 'MiddleName' => 'Reyes', 'Age' => 30, 'BirthDate' => '1995-09-05', 'Sex' => 'F',
                 'BirthPlace' => 'Calamba', 'Nationality' => 'Filipino', 'Address' => '45 Mabini St, Calamba',
                 'ContactNumber' => '09181234567', 'Email' => 'ana.lim@example.com', 'HiredDate' => '2026-01-10',
             ],
             [
-                'StaffID' => 'C002', 'UserID' => 3, 'LastName' => 'Santos', 'FirstName' => 'Maria',
+                'StaffID' => 'C002', 'UserID' => 3, 'RoleID' => 3, 'LastName' => 'Santos', 'FirstName' => 'Maria',
                 'MiddleName' => 'Garcia', 'Age' => 24, 'BirthDate' => '2001-03-21', 'Sex' => 'F',
                 'BirthPlace' => 'Laguna', 'Nationality' => 'Filipino', 'Address' => '67 Bonifacio St, Laguna',
                 'ContactNumber' => '09191234567', 'Email' => 'maria.santos@example.com', 'HiredDate' => '2026-02-01',
             ],
             [
-                'StaffID' => 'C005', 'UserID' => 4, 'LastName' => 'Bautista', 'FirstName' => 'Carlos',
+                'StaffID' => 'C005', 'UserID' => 4, 'RoleID' => 3, 'LastName' => 'Bautista', 'FirstName' => 'Carlos',
                 'MiddleName' => 'Tan', 'Age' => 27, 'BirthDate' => '1998-07-14', 'Sex' => 'M',
                 'BirthPlace' => 'Cavite', 'Nationality' => 'Filipino', 'Address' => '89 Aguinaldo St, Cavite',
                 'ContactNumber' => '09201234567', 'Email' => 'carlos.bautista@example.com', 'HiredDate' => '2026-02-15',
             ],
             [
-                'StaffID' => 'K003', 'UserID' => 5, 'LastName' => 'Reyes', 'FirstName' => 'Pedro',
+                'StaffID' => 'K003', 'UserID' => 5, 'RoleID' => 4, 'LastName' => 'Reyes', 'FirstName' => 'Pedro',
                 'MiddleName' => 'Cruz', 'Age' => 29, 'BirthDate' => '1996-11-30', 'Sex' => 'M',
                 'BirthPlace' => 'Batangas', 'Nationality' => 'Filipino', 'Address' => '12 Luna St, Batangas',
                 'ContactNumber' => '09211234567', 'Email' => 'pedro.reyes@example.com', 'HiredDate' => '2026-02-20',
             ],
             [
-                'StaffID' => 'K007', 'UserID' => 6, 'LastName' => 'Doe', 'FirstName' => 'John',
+                'StaffID' => 'K007', 'UserID' => 6, 'RoleID' => 4, 'LastName' => 'Doe', 'FirstName' => 'John',
                 'MiddleName' => null, 'Age' => 26, 'BirthDate' => '1999-12-25', 'Sex' => 'M',
                 'BirthPlace' => 'Quezon City', 'Nationality' => 'Filipino', 'Address' => '34 Magsaysay Ave, QC',
                 'ContactNumber' => '09221234567', 'Email' => 'john.doe@example.com', 'HiredDate' => '2026-06-01',

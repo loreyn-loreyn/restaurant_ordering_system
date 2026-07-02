@@ -68,6 +68,12 @@
                     </a>
                 </div>
             </form>
+
+                <a href="{{ route('customer.display') }}"
+                    class="absolute bottom-4 right-4 text-xs text-slate-400 hover:text-slate-600">
+                    Customer Display
+                </a>
         </div>
     </div>
 </div>
+

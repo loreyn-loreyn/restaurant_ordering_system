@@ -4,7 +4,6 @@ namespace App\Livewire\Cashier;
 
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -16,8 +15,7 @@ class Menu extends Component
 
     public function mount()
     {
-        // Safety net: bounce back to order type selection if no cart/order in session.
-        if (! session('current_order_id')) {
+        if (! session('current_order_type')) {
             $this->redirectRoute('cashier.order-type', navigate: true);
         }
     }
@@ -32,6 +30,12 @@ class Menu extends Component
         $this->redirectRoute('cashier.cart', navigate: true);
     }
 
+    public function changeOrderType(): void
+    {
+        session()->forget(['cart_items', 'current_order_type', 'current_order_id']);
+        $this->redirectRoute('cashier.order-type', navigate: true);
+    }
+
     public function signOut(): void
     {
         session()->forget('current_order_id');
@@ -43,14 +47,7 @@ class Menu extends Component
 
     public function getCartCountProperty(): int
     {
-        $orderId = session('current_order_id');
-        if (! $orderId) {
-            return 0;
-        }
-
-        $order = Order::find($orderId);
-
-        return $order ? $order->item_count : 0;
+        return collect(session('cart_items', []))->sum('quantity');
     }
 
     public function render()

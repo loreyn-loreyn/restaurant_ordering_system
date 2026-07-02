@@ -3,6 +3,7 @@
 namespace App\Livewire\Cashier;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -18,22 +19,32 @@ class OrderType extends Component
      */
     public function selectType(string $type): void
     {
-        $order = Order::create([
-            'UserID' => Auth::id(),
-            'PaymentID' => null,
-            'DiscountID' => null,
-            'OrderType' => $type === 'Dine-in', // true = Dine-in, false = Take-out
-            'OrderStatus' => false,             // pending / still in cart
-            'OrderDate' => now()->toDateString(),
-            'TotalAmount' => 0,
-            'Change' => 0,
+        // If there's an existing uncommitted (unpaid) order in session, delete it cleanly.
+        $existingId = session('current_order_id');
+        if ($existingId) {
+            $existing = Order::find($existingId);
+            if ($existing && ! $existing->OrderStatus) {
+                OrderItem::where('OrderID', $existingId)->delete();
+                $existing->delete();
+            }
+        }
+
+        // Just store the chosen type — the Order row is created only when the first item is added.
+        session([
+            'current_order_id'   => null,
+            'current_order_type' => $type,
         ]);
 
-        session(['current_order_id' => $order->OrderID]);
-
-        $this->dispatch('order-type-selected', type: $type);
-
         $this->redirectRoute('cashier.dishes', navigate: true);
+    }
+
+    public function signOut(): void
+    {
+        session()->forget(['cart_items', 'current_order_type', 'current_order_id']);
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        $this->redirectRoute('login', navigate: true);
     }
 
     public function render()

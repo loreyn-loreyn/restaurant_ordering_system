@@ -17,7 +17,7 @@ return new class extends Migration
                 ->constrained('dishes', 'DishID')
                 ->onUpdate('cascade')->onDelete('cascade');
             $table->integer('Quantity');
-            $table->char('ItemStatus', 1);
+            $table->char('ItemStatus', 1)->default('S');
             $table->string('Choice', 150);
             $table->string('SpecialInstruction', 255) -> nullable();
         });

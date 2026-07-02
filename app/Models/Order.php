@@ -12,7 +12,7 @@ class Order extends Model
 
     protected $fillable = [
         'UserID', 'PaymentID', 'DiscountID', 'OrderType', 'OrderStatus',
-        'OrderDate', 'TotalAmount', 'Change',
+        'OrderDate', 'OrderTime', 'TotalAmount', 'Change',
     ];
 
     protected $casts = [
@@ -48,18 +48,11 @@ class Order extends Model
         return $this->OrderType ? 'Dine-in' : 'Take-out';
     }
 
-    /**
-     * Sum of (dish price * quantity) for every item currently in the cart,
-     * before any discount/comp is applied.
-     */
     public function getSubtotalAttribute(): float
     {
         return (float) $this->items->sum(fn ($item) => $item->dish->Price * $item->Quantity);
     }
 
-    /**
-     * Subtotal minus the flat amount of the attached discount/comp, floored at 0.
-     */
     public function getTotalAfterDiscountAttribute(): float
     {
         $subtotal = $this->subtotal;

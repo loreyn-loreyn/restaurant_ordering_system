@@ -13,8 +13,6 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Cart extends Component
 {
-    public Order $order;
-
     // Discounts & Comps modal state
     public bool $showDiscountModal = false;
     public string $discountType = 'None';
@@ -29,69 +27,85 @@ class Cart extends Component
 
     public function mount()
     {
-        $orderId = session('current_order_id');
-
-        if (! $orderId || ! Order::find($orderId)) {
+        if (! session('current_order_type')) {
             $this->redirectRoute('cashier.order-type', navigate: true);
             return;
         }
 
-        $this->order = Order::with('items.dish', 'discount')->find($orderId);
-
-        if ($this->order->DiscountID) {
-            $this->discountId = $this->order->DiscountID;
-            $this->discountType = $this->order->discount->Type;
-        }
-
-        // Came here via "Proceed to Payment" on the Dish Detail page.
         if (session()->pull('open_discount_modal')) {
             $this->showDiscountModal = true;
         }
     }
 
-    protected function refreshOrder(): void
+    // ---------------------------------------------------------------
+    // Session cart helpers
+    // ---------------------------------------------------------------
+
+    protected function getItems(): array
     {
-        $this->order->refresh();
-        $this->order->load('items.dish', 'discount');
+        return session('cart_items', []);
     }
 
-    public function increment(int $orderItemId): void
+    protected function saveItems(array $items): void
     {
-        $item = OrderItem::where('OrderID', $this->order->OrderID)->findOrFail($orderItemId);
-        $item->update(['Quantity' => $item->Quantity + 1]);
-        $this->refreshOrder();
+        session(['cart_items' => array_values($items)]);
     }
 
-    public function decrement(int $orderItemId): void
+    public function getSubtotalProperty(): float
     {
-        $item = OrderItem::where('OrderID', $this->order->OrderID)->findOrFail($orderItemId);
+        return collect($this->getItems())->sum(fn ($i) => $i['price'] * $i['quantity']);
+    }
 
-        if ($item->Quantity <= 1) {
-            $item->delete();
-        } else {
-            $item->update(['Quantity' => $item->Quantity - 1]);
+    public function getTotalAfterDiscountProperty(): float
+    {
+        $subtotal = $this->subtotal;
+
+        if (! $this->discountId || $this->discountId === 0) {
+            return $subtotal;
         }
 
-        $this->refreshOrder();
-    }
-
-    public function setQuantity(int $orderItemId, int $quantity): void
-    {
-        $item = OrderItem::where('OrderID', $this->order->OrderID)->findOrFail($orderItemId);
-
-        if ($quantity <= 0) {
-            $item->delete();
-        } else {
-            $item->update(['Quantity' => $quantity]);
+        $discount = Discount::find((int) $this->discountId);
+        if (! $discount) {
+            return $subtotal;
         }
 
-        $this->refreshOrder();
+        return max($subtotal - (float) $discount->Amount, 0);
     }
 
-    public function removeItem(int $orderItemId): void
+    public function increment(string $key): void
     {
-        OrderItem::where('OrderID', $this->order->OrderID)->where('OrderItemID', $orderItemId)->delete();
-        $this->refreshOrder();
+        $items = $this->getItems();
+        foreach ($items as &$item) {
+            if ($item['key'] === $key) {
+                $item['quantity']++;
+                break;
+            }
+        }
+        unset($item);
+        $this->saveItems($items);
+    }
+
+    public function decrement(string $key): void
+    {
+        $items = $this->getItems();
+        foreach ($items as $index => $item) {
+            if ($item['key'] === $key) {
+                if ($item['quantity'] <= 1) {
+                    unset($items[$index]);
+                } else {
+                    $items[$index]['quantity']--;
+                }
+                break;
+            }
+        }
+        $this->saveItems($items);
+    }
+
+    public function removeItem(string $key): void
+    {
+        $items = $this->getItems();
+        $items = array_filter($items, fn ($i) => $i['key'] !== $key);
+        $this->saveItems($items);
     }
 
     public function goToMenu(): void
@@ -102,6 +116,11 @@ class Cart extends Component
     // ---------------------------------------------------------------
     // Discounts & Comps
     // ---------------------------------------------------------------
+
+    public function updatedDiscountType(): void
+    {
+        $this->discountId = null;
+    }
 
     public function openDiscountModal(): void
     {
@@ -124,20 +143,16 @@ class Cart extends Component
 
     public function applyDiscount(): void
     {
-        $this->order->update(['DiscountID' => $this->discountId]);
-        $this->refreshOrder();
         $this->showDiscountModal = false;
-        $this->showPaymentModal = true;
+        $this->showPaymentModal  = true;
     }
 
     public function skipDiscount(): void
     {
-        $this->order->update(['DiscountID' => null]);
-        $this->discountId = null;
-        $this->discountType = 'None';
-        $this->refreshOrder();
+        $this->discountId        = null;
+        $this->discountType      = 'None';
         $this->showDiscountModal = false;
-        $this->showPaymentModal = true;
+        $this->showPaymentModal  = true;
     }
 
     /**
@@ -146,7 +161,7 @@ class Cart extends Component
      */
     public function backToDiscount(): void
     {
-        $this->showPaymentModal = false;
+        $this->showPaymentModal  = false;
         $this->showDiscountModal = true;
     }
 
@@ -156,11 +171,11 @@ class Cart extends Component
      */
     public function getPreviewDiscountAmountProperty(): float
     {
-        if (! $this->discountId) {
+        if (! $this->discountId || $this->discountId === 0) {
             return 0.0;
         }
 
-        $discount = Discount::find($this->discountId);
+        $discount = Discount::find((int) $this->discountId);
 
         return $discount ? (float) $discount->Amount : 0.0;
     }
@@ -176,10 +191,10 @@ class Cart extends Component
 
     public function closePaymentModal(): void
     {
-        $this->showPaymentModal = false;
+        $this->showPaymentModal  = false;
         $this->paymentSuccessful = false;
-        $this->renderedAmount = '';
-        $this->referenceNo = '';
+        $this->renderedAmount    = '';
+        $this->referenceNo       = '';
     }
 
     public function pressKey(string $key): void
@@ -205,14 +220,13 @@ class Cart extends Component
     public function getChangeProperty(): float
     {
         $rendered = (float) ($this->renderedAmount ?: 0);
-        $toPay = $this->order->total_after_discount;
 
-        return max($rendered - $toPay, 0);
+        return max($rendered - $this->totalAfterDiscount, 0);
     }
 
     /**
-     * Finalizes the order: creates the payment row, links it to the order,
-     * marks the order completed, and clears the in-progress cart session.
+     * Only here — on confirmed payment — do we write to the DB.
+     * Creates Order + OrderItems + Payment in one go.
      */
     public function proceedPayment(): void
     {
@@ -220,61 +234,84 @@ class Cart extends Component
             'paymentType' => 'required|in:Cash,Online/Card',
         ]);
 
+        $toPay = $this->totalAfterDiscount;
+
         if ($this->paymentType === 'Cash') {
             $this->validate(['renderedAmount' => 'required|numeric|min:0']);
 
-            if ((float) $this->renderedAmount < $this->order->total_after_discount) {
-                $this->addError('renderedAmount', 'Amount must be at least P' . number_format($this->order->total_after_discount, 2) . '.');
+            if ((float) $this->renderedAmount < $toPay) {
+                $this->addError('renderedAmount', 'Amount not enough, must be at least $' . number_format($toPay, 2) . '.');
                 return;
             }
         } else {
             $this->validate(['referenceNo' => 'required']);
         }
 
-        $toPay = $this->order->total_after_discount;
+        $items    = $this->getItems();
+        $type     = session('current_order_type');
         $rendered = $this->paymentType === 'Cash' ? (float) $this->renderedAmount : $toPay;
-        $change = max($rendered - $toPay, 0);
+        $change   = max($rendered - $toPay, 0);
+        $staffId  = Auth::user()->staffDetails->StaffID ?? null;
 
-        $staffId = Auth::user()->staffDetails->StaffID ?? null;
+        // 1. Create the Order row
+        $order = Order::create([
+            'UserID'      => Auth::id(),
+            'PaymentID'   => null,
+            'DiscountID'  => $this->discountId,
+            'OrderType'   => $type === 'Dine-in',
+            'OrderStatus' => true,
+            'OrderDate'   => now()->toDateString(),
+            'TotalAmount' => $toPay,
+            'Change'      => $change,
+        ]);
 
+        // 2. Create OrderItems
+        foreach ($items as $item) {
+            OrderItem::create([
+                'OrderID'            => $order->OrderID,
+                'DishID'             => $item['dish_id'],
+                'Quantity'           => $item['quantity'],
+                'ItemStatus'         => 'S',
+                'Choice'             => $item['choice'],
+                'SpecialInstruction' => $item['special_instruction'],
+            ]);
+        }
+
+        // 3. Create Payment and link back to Order
         $payment = Payment::create([
-            'OrderID' => $this->order->OrderID,
-            'StaffID' => $staffId,
-            'Method' => $this->paymentType === 'Cash' ? 'Cash' : 'Online/Card',
-            'RenderedAmount' => $rendered,
-            'Reference' => $this->paymentType === 'Cash' ? null : (int) $this->referenceNo,
+            'OrderID'         => $order->OrderID,
+            'StaffID'         => $staffId,
+            'Method'          => $this->paymentType === 'Cash' ? 'Cash' : 'Online/Card',
+            'RenderedAmount'  => $rendered,
+            'Reference'       => $this->paymentType === 'Cash' ? null : (int) $this->referenceNo,
             'TransactionDate' => now()->toDateString(),
         ]);
 
-        $this->order->update([
-            'PaymentID' => $payment->PaymentID,
-            'OrderStatus' => true,
-            'TotalAmount' => $toPay,
-            'Change' => $change,
-        ]);
+        $order->update(['PaymentID' => $payment->PaymentID]);
 
         $this->paymentSuccessful = true;
     }
 
     public function finishTransaction(): void
     {
-        session()->forget(['current_order_id', 'open_discount_modal']);
+        session()->forget(['cart_items', 'current_order_type', 'current_order_id', 'open_discount_modal']);
         $this->redirectRoute('cashier.order-type', navigate: true);
     }
 
     /**
-     * Voids the whole in-progress order (cart) and starts over.
+     * Voids the whole in-progress cart and starts over.
+     * Nothing to delete from DB since items only exist in session until payment.
      */
     public function endTransaction(): void
     {
-        OrderItem::where('OrderID', $this->order->OrderID)->delete();
-        $this->order->delete();
-        session()->forget(['current_order_id', 'open_discount_modal']);
+        session()->forget(['cart_items', 'current_order_type', 'current_order_id', 'open_discount_modal']);
         $this->redirectRoute('cashier.order-type', navigate: true);
     }
 
     public function render()
     {
-        return view('livewire.cashier.cart');
+        return view('livewire.cashier.cart', [
+            'items' => collect($this->getItems()),
+        ]);
     }
 }

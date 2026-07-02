@@ -4,6 +4,11 @@ use Illuminate\Support\Facades\Route;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\UpdatePassword;
+use App\Livewire\Manager\Sales as ManagerSales;
+use App\Livewire\Manager\Dishes as ManagerDishes;
+use App\Livewire\Manager\Staffs as ManagerStaffs;
+use App\Livewire\Manager\StaffCreate as ManagerStaffCreate;
+use App\Livewire\Manager\StaffDetail as ManagerStaffDetail;
 use App\Livewire\Cashier\OrderType;
 use App\Livewire\Cashier\Menu;
 use App\Livewire\Cashier\DishDetail;
@@ -19,6 +24,7 @@ use App\Livewire\Kitchen\Availability as KitchenAvailability;
 Route::middleware('guest')->group(function () {
     Route::get('/login', Login::class)->name('login');
     Route::get('/forgot-password', ForgotPassword::class)->name('password.forgot');
+    Route::get('/customer-display', \App\Livewire\CustomerDisplay::class)->name('customer.display');
 });
 
 /*
@@ -50,17 +56,13 @@ Route::middleware('auth')->group(function () {
 
     // Manager
     Route::middleware('role:Manager')->prefix('manager')->group(function () {
-        Route::get('/sales', function () {
-            return view('manager.sales');
-        })->name('manager.sales');
-
-        Route::get('/dishes', function () {
-            return view('manager.dishes');
-        })->name('manager.dishes');
-
-        Route::get('/staffs', function () {
-            return view('manager.staffs');
-        })->name('manager.staffs');
+        Route::get('/sales', ManagerSales::class)->name('manager.sales');
+        Route::get('/dishes', ManagerDishes::class)->name('manager.dishes');
+        Route::get('/staffs', ManagerStaffs::class)->name('manager.staffs');
+        // IMPORTANT: /staffs/create must be registered before /staffs/{staffDetail}
+        // or Laravel will try to resolve "create" as a StaffID.
+        Route::get('/staffs/create', ManagerStaffCreate::class)->name('manager.staff.create');
+        Route::get('/staffs/{staffDetail}', ManagerStaffDetail::class)->name('manager.staff.detail');
     });
 
     // Cashier

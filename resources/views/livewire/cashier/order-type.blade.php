@@ -20,4 +20,10 @@
             Take-out
         </button>
     </div>
+
+    <div class="px-6 pb-6">
+        <button wire:click="signOut" class="text-sm text-slate-400 hover:text-slate-600">
+            Sign Out
+        </button>
+    </div>
 </div>
