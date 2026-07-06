@@ -15,7 +15,12 @@ return new class extends Migration
                 ->onUpdate('cascade')->onDelete('cascade');
             // PaymentID FK constraint is added in a later migration,
             // once the payments table exists (orders <-> payments reference each other).
-            $table->unsignedBigInteger('PaymentID');
+            $table->unsignedBigInteger('PaymentID')->nullable();
+            $table->foreignId('DiscountID')
+                ->nullable()
+                ->constrained('discounts', 'DiscountID')
+                ->onUpdate('cascade')->onDelete('set null');
+            $table->boolean('OrderType');
             $table->boolean('OrderStatus')->default(false);
             $table->date('OrderDate');
             $table->decimal('TotalAmount', 10, 2);

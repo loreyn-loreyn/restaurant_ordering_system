@@ -18,7 +18,8 @@ return new class extends Migration
                 ->references('StaffID')->on('staff_details')
                 ->onUpdate('cascade')->onDelete('cascade');
             $table->string('Method', 50);
-            $table->integer('Reference');
+            $table->decimal('RenderedAmount', 10, 2);
+            $table->integer('Reference')->nullable();
             $table->date('TransactionDate');
         });
     }

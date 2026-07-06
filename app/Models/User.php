@@ -2,31 +2,48 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $table = 'users';
+    protected $primaryKey = 'UserID';
+
+    protected $fillable = [
+        'RoleID',
+        'UserName',
+        'Password',
+        'DateIssued',
+        'AccountStatus',
+        'AccountApprovalStatus',
+    ];
+
+    protected $hidden = [
+        'Password',
+    ];
+
+    protected $casts = [
+        'DateIssued' => 'date',
+        'AccountStatus' => 'boolean',
+        'AccountApprovalStatus' => 'boolean',
+    ];
+
+    // Tell Laravel which column holds the hashed password
+    public function getAuthPassword()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->Password;
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'RoleID', 'RoleID');
+    }
+
+    public function staffDetails()
+    {
+        return $this->hasOne(StaffDetails::class, 'UserID', 'UserID');
     }
 }

@@ -16,8 +16,8 @@ return new class extends Migration
                 ->onUpdate('cascade')->onDelete('cascade');
             $table->timestamp('AttendanceDate')->useCurrent();
             $table->char('Status', 1);
-            $table->time('TimeIn');
-            $table->time('TimeOut');
+            $table->time('TimeIn') -> nullable();
+            $table->time('TimeOut') -> nullable();
         });
     }
 
