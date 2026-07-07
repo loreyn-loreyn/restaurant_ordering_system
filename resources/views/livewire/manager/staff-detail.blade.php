@@ -18,13 +18,15 @@
                 {{-- Photo + section + account status --}}
                 <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-4 flex items-center gap-4">
                     <div class="w-20 h-20 rounded bg-slate-200 flex items-center justify-center text-slate-400 text-3xl overflow-hidden shrink-0">
-                        @if ($staff->PhotoUrl)
+                        @if ($Photo)
+                            <img src="{{ $Photo->temporaryUrl() }}" class="w-full h-full object-cover">
+                        @elseif ($staff->PhotoUrl)
                             <img src="{{ $staff->PhotoUrl }}" alt="{{ $staff->FullName }}" class="w-full h-full object-cover">
                         @else
                             &#128100;
                         @endif
                     </div>
-                    <div>
+                    <div class="flex-1">
                         <p class="text-sm font-semibold text-slate-800">{{ $staff->Section ?? 'No section yet' }}</p>
                         @if ($staff->HasAccount && $staff->user->AccountApprovalStatus)
                             <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -35,6 +37,20 @@
                                 Account not yet created by Admin
                             </span>
                         @endif
+
+                        <div class="mt-2 flex items-center gap-2">
+                            <input type="file" wire:model="Photo" accept="image/png, image/jpeg, image/jpg"
+                                   class="block text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:bg-slate-100 file:text-slate-600 file:text-xs">
+                            @if ($Photo)
+                                <button wire:click="savePhoto" wire:loading.attr="disabled" wire:target="savePhoto"
+                                        class="shrink-0 text-xs bg-slate-700 hover:bg-slate-800 text-white px-3 py-1 rounded transition">
+                                    <span wire:loading.remove wire:target="savePhoto">Save</span>
+                                    <span wire:loading wire:target="savePhoto">Saving...</span>
+                                </button>
+                            @endif
+                        </div>
+                        <div wire:loading wire:target="Photo" class="text-xs text-slate-400 mt-1">Uploading...</div>
+                        @error('Photo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
 

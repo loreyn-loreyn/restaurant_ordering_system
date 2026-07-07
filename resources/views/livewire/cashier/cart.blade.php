@@ -52,16 +52,23 @@
 
                 {{-- Foreground card --}}
                 <div
-                    class="relative bg-white flex items-center justify-between py-3 px-1 select-none touch-pan-y"
+                    class="relative bg-white flex items-center justify-between py-3 px-1 select-none touch-pan-y cursor-pointer"
                     :class="dragging ? '' : 'transition-transform duration-200 ease-out'"
                     :style="`transform: translateX(${x}px)`"
                     @pointerdown="onStart($event.clientX); $el.setPointerCapture($event.pointerId)"
                     @pointermove="onMove($event.clientX)"
                     @pointerup="onEnd()"
                     @pointercancel="onEnd()"
+                    @click="if (! dragging && x === 0) { Livewire.navigate('{{ route('cashier.dish', $item['dish_id']) }}?cartItem={{ $item['key'] }}') }"
                 >
                     <div class="flex items-center gap-3">
-                        <div class="bg-slate-200 w-14 h-14 flex items-center justify-center rounded text-slate-400 text-xl">&#128247;</div>
+                        <div class="bg-slate-200 w-14 h-14 flex items-center justify-center rounded text-slate-400 text-xl overflow-hidden shrink-0">
+                            @if (! empty($item['photo_url']))
+                                <img src="{{ $item['photo_url'] }}" alt="{{ $item['dish_name'] }}" class="w-full h-full object-cover">
+                            @else
+                                &#128247;
+                            @endif
+                        </div>
                         <div>
                             <p class="font-medium text-base">{{ $item['dish_name'] }}</p>
                             <p class="text-sm text-slate-500">${{ number_format($item['price'], 2) }} &times; {{ $item['quantity'] }}</p>
@@ -76,9 +83,9 @@
 
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-2">
-                            <button @pointerdown.stop wire:click="decrement('{{ $item['key'] }}')" class="w-7 h-7 rounded border border-slate-300 text-sm">-</button>
+                            <button @pointerdown.stop @click.stop wire:click="decrement('{{ $item['key'] }}')" class="w-7 h-7 rounded border border-slate-300 text-sm">-</button>
                             <span class="w-6 text-center text-base">{{ $item['quantity'] }}</span>
-                            <button @pointerdown.stop wire:click="increment('{{ $item['key'] }}')" class="w-7 h-7 rounded border border-slate-300 text-sm">+</button>
+                            <button @pointerdown.stop @click.stop wire:click="increment('{{ $item['key'] }}')" class="w-7 h-7 rounded border border-slate-300 text-sm">+</button>
                         </div>
                         <span class="text-base font-medium w-20 text-right">${{ number_format($item['price'] * $item['quantity'], 2) }}</span>
                     </div>

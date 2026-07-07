@@ -1,26 +1,5 @@
 <div class="min-h-screen flex bg-slate-100">
 
-    {{-- ── Sidebar ─────────────────────────────────────────────────── --}}
-    <aside class="w-48 bg-slate-700 text-white flex flex-col py-6 shrink-0">
-        <h1 class="px-6 text-xl font-semibold mb-6">Kitchen</h1>
-
-        <a href="{{ route('kitchen.orders') }}" wire:navigate
-           class="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-600 hover:text-white text-sm transition">
-            Orders
-        </a>
-        <a href="{{ route('kitchen.availability') }}" wire:navigate
-           class="flex items-center gap-3 px-6 py-3 bg-slate-600 text-white font-medium text-sm">
-            Availability
-        </a>
-
-        <div class="mt-auto px-6">
-            <button wire:click="signOut"
-                    class="flex items-center gap-2 text-sm text-slate-300 hover:text-white py-2 transition">
-                Sign Out
-            </button>
-        </div>
-    </aside>
-
     {{-- ── Main ────────────────────────────────────────────────────── --}}
     <main class="flex-1 flex flex-col overflow-hidden">
 
@@ -65,9 +44,13 @@
                     <div class="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col transition
                                 {{ ! $dish->Availability ? 'opacity-50' : '' }}">
 
-                        {{-- Dish image placeholder --}}
-                        <div class="bg-slate-200 h-36 flex items-center justify-center text-slate-400 text-4xl shrink-0">
-                            &#128247;
+                        {{-- Dish image --}}
+                        <div class="bg-slate-200 h-36 flex items-center justify-center text-slate-400 text-4xl shrink-0 overflow-hidden">
+                            @if ($dish->PhotoUrl)
+                                <img src="{{ $dish->PhotoUrl }}" alt="{{ $dish->DishName }}" class="w-full h-full object-cover">
+                            @else
+                                &#128247;
+                            @endif
                         </div>
 
                         <div class="p-3 flex flex-col gap-2">

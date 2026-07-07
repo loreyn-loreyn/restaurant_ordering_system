@@ -19,14 +19,17 @@
             </button>
         @endforeach
 
-        <div class="mt-auto px-6 pt-6 flex flex-col gap-2">
-            <button wire:click="changeOrderType" class="text-sm text-slate-300 hover:text-white text-left">
+    <div class="mt-auto px-6 pt-6 flex flex-col gap-2">
+        <button wire:click="changeOrderType" class="text-sm text-slate-300 hover:text-white text-left">
                 Change Order Type
-            </button>
-            <button wire:click="signOut" class="text-sm text-slate-300 hover:text-white text-left">
+        </button>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="text-sm text-slate-300 hover:text-white text-left">
                 Sign Out
             </button>
-        </div>
+        </form>
+    </div>
     </aside>
 
     {{-- Main content --}}
@@ -38,8 +41,12 @@
                         onclick="window.location.href='{{ route('cashier.dish', $dish) }}'"
                      @endif
                 >
-                    <div class="bg-slate-200 h-28 flex items-center justify-center text-slate-400 text-3xl">
-                        &#128247;
+                    <div class="bg-slate-200 h-28 flex items-center justify-center text-slate-400 text-3xl overflow-hidden">
+                        @if ($dish->PhotoUrl)
+                            <img src="{{ $dish->PhotoUrl }}" alt="{{ $dish->DishName }}" class="w-full h-full object-cover">
+                        @else
+                            &#128247;
+                        @endif
                     </div>
                     <div class="p-3">
                         <div class="flex justify-between items-start">

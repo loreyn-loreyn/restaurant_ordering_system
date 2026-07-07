@@ -29,7 +29,15 @@
             @forelse ($staff as $s)
                 @php $todayAttendance = $s->attendances->first(); @endphp
                 <a href="{{ route('manager.staff.detail', $s->StaffID) }}" wire:navigate
-                   class="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
+                   x-data="{ pressTimer: null, longPressed: false }"
+                   @mousedown="longPressed = false; pressTimer = setTimeout(() => { longPressed = true; $wire.openActionMenu('{{ $s->StaffID }}') }, 600)"
+                   @mouseup="clearTimeout(pressTimer)"
+                   @mouseleave="clearTimeout(pressTimer)"
+                   @touchstart.passive="longPressed = false; pressTimer = setTimeout(() => { longPressed = true; $wire.openActionMenu('{{ $s->StaffID }}') }, 600)"
+                   @touchend="clearTimeout(pressTimer)"
+                   @contextmenu.prevent
+                   @click="if (longPressed) { $event.preventDefault() }"
+                   class="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col hover:shadow-md transition select-none">
                     <div class="bg-slate-200 h-28 flex items-center justify-center text-slate-400 text-3xl shrink-0 overflow-hidden">
                         @if ($s->PhotoUrl)
                             <img src="{{ $s->PhotoUrl }}" alt="{{ $s->FullName }}" class="w-full h-full object-cover">
@@ -69,4 +77,49 @@
             +
         </a>
     </div>
+
+    {{-- ── Long-press action menu (Edit / Delete) ─────────────────── --}}
+    @if ($actionMenuStaff)
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" wire:click.self="closeActionMenu">
+            <div class="bg-white rounded-lg shadow-xl w-72 p-4">
+                <p class="text-sm font-semibold text-slate-800 mb-4 text-center">{{ $actionMenuStaff->FullName }}</p>
+                <div class="space-y-2">
+                    <button wire:click="chooseEditFromMenu"
+                            class="w-full bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium py-2 rounded transition">
+                        Edit
+                    </button>
+                    <button wire:click="chooseDeleteFromMenu"
+                            class="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 rounded transition">
+                        Delete
+                    </button>
+                    <button wire:click="closeActionMenu"
+                            class="w-full bg-slate-100 text-slate-700 text-sm font-medium py-2 rounded hover:bg-slate-200 transition">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ── Long-press delete confirmation ─────────────────────────── --}}
+    @if ($pendingDeleteStaff)
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" wire:click.self="cancelDelete">
+            <div class="bg-white rounded-lg shadow-xl w-80 p-5 text-center">
+                <p class="text-sm text-slate-700 mb-1">Delete this staff record?</p>
+                <p class="text-sm font-semibold text-slate-800 mb-4">{{ $pendingDeleteStaff->FullName }}</p>
+                <p class="text-xs text-slate-400 mb-4">This cannot be undone.</p>
+                <div class="flex gap-3">
+                    <button wire:click="cancelDelete"
+                            class="flex-1 bg-slate-100 text-slate-700 text-sm font-medium py-2 rounded hover:bg-slate-200 transition">
+                        Cancel
+                    </button>
+                    <button wire:click="deleteStaff" wire:loading.attr="disabled" wire:target="deleteStaff"
+                            class="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 rounded transition">
+                        <span wire:loading.remove wire:target="deleteStaff">Delete</span>
+                        <span wire:loading wire:target="deleteStaff">Deleting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

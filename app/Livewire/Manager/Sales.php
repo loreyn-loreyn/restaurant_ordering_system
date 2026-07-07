@@ -10,7 +10,7 @@ use Livewire\Component;
 #[Layout('layouts.manager')]
 class Sales extends Component
 {
-    public string $period = 'daily'; // hourly | daily | weekly | monthly | yearly
+    public string $period = 'daily'; // daily | weekly | monthly | yearly
 
     public function setPeriod(string $period): void
     {
@@ -22,7 +22,6 @@ class Sales extends Component
         $now = Carbon::now();
 
         return match ($this->period) {
-            'hourly' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
             'daily' => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()],
             'weekly' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
             'monthly' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
@@ -36,19 +35,6 @@ class Sales extends Component
         $buckets = [];
 
         switch ($this->period) {
-            case 'hourly':
-                for ($h = 0; $h < 24; $h++) {
-                    $buckets[sprintf('%02d:00', $h)] = 0.0;
-                }
-                foreach ($orders as $order) {
-                    if (! $order->OrderTime) {
-                        continue;
-                    }
-                    $key = sprintf('%02d:00', (int) Carbon::parse($order->OrderTime)->format('H'));
-                    $buckets[$key] += (float) $order->TotalAmount;
-                }
-                break;
-
             case 'daily':
                 $cursor = $start->copy();
                 while ($cursor->lte($end)) {

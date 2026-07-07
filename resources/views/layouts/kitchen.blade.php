@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'OJT Onboarding') }} - Manager</title>
+    <title>{{ config('app.name', 'OJT Onboarding') }} - Kitchen</title>
     @vite('resources/css/app.css')
     @livewireStyles
 </head>
@@ -12,22 +12,17 @@
 
         {{-- ── Sidebar ─────────────────────────────────────────────────── --}}
         <aside class="w-48 bg-slate-700 text-white flex flex-col py-6 shrink-0">
-            <h1 class="px-6 text-xl font-semibold mb-6">Manager</h1>
+            <h1 class="px-6 text-xl font-semibold mb-6">Kitchen</h1>
 
-            <a href="{{ route('manager.sales') }}" wire:navigate
+            <a href="{{ route('kitchen.orders') }}" wire:navigate
                class="flex items-center gap-3 px-6 py-3 text-sm transition
-                      {{ request()->routeIs('manager.sales') ? 'bg-slate-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-600 hover:text-white' }}">
-                Sales
+                      {{ request()->routeIs('kitchen.orders') ? 'bg-slate-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-600 hover:text-white' }}">
+                Orders
             </a>
-            <a href="{{ route('manager.dishes') }}" wire:navigate
+            <a href="{{ route('kitchen.availability') }}" wire:navigate
                class="flex items-center gap-3 px-6 py-3 text-sm transition
-                      {{ request()->routeIs('manager.dishes') ? 'bg-slate-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-600 hover:text-white' }}">
-                Dishes
-            </a>
-            <a href="{{ route('manager.staffs') }}" wire:navigate
-               class="flex items-center gap-3 px-6 py-3 text-sm transition
-                      {{ request()->routeIs('manager.staffs') ? 'bg-slate-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-600 hover:text-white' }}">
-                Staffs
+                      {{ request()->routeIs('kitchen.availability') ? 'bg-slate-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-600 hover:text-white' }}">
+                Availability
             </a>
 
             <div class="mt-auto px-6">
@@ -42,7 +37,7 @@
         </aside>
 
         {{-- ── Main ────────────────────────────────────────────────────── --}}
-        <main class="flex-1 flex flex-col overflow-hidden">
+        <main class="flex-1 flex flex-col overflow-y-auto">
             {{ $slot }}
         </main>
     </div>

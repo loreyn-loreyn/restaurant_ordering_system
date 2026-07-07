@@ -5,6 +5,7 @@ namespace App\Livewire\Manager;
 use App\Models\Role;
 use App\Models\StaffDetails;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -15,6 +16,10 @@ class StaffCreate extends Component
     use WithFileUploads;
 
     public bool $confirming = false;
+
+    // ---- edit mode state ----
+    public ?string $editingStaffId = null;
+    public ?string $existingPhoto = null;
 
     public string $LastName = '';
     public string $FirstName = '';
@@ -53,7 +58,8 @@ class StaffCreate extends Component
             'Email' => ['required', 'email', 'max:150'],
             'AssignedRoleID' => ['required', 'exists:roles,RoleID'],
             'HiredDate' => ['required', 'date'],
-            'Photo' => ['nullable', 'image', 'max:2048'],
+            // Only real picture files are allowed (no svg/bmp/etc.), capped at 25MB
+            'Photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:25600'],
         ];
     }
 
@@ -61,13 +67,51 @@ class StaffCreate extends Component
     {
         return [
             'ContactNumber.regex' => 'Enter a valid PH mobile number, e.g. 09171234567 or +639171234567.',
+            'Photo.image' => 'Only image files are allowed (JPG or PNG).',
+            'Photo.mimes' => 'Only image files are allowed (JPG or PNG).',
+            'Photo.max' => 'Image must not be larger than 25MB.',
         ];
+    }
+
+    public function mount(?StaffDetails $staffDetail = null): void
+    {
+        if ($staffDetail && $staffDetail->exists) {
+            $this->editingStaffId = $staffDetail->StaffID;
+            $this->LastName = $staffDetail->LastName;
+            $this->FirstName = $staffDetail->FirstName;
+            $this->MiddleName = $staffDetail->MiddleName ?? '';
+            $this->Age = (string) $staffDetail->Age;
+            $this->BirthDate = $staffDetail->BirthDate->toDateString();
+            $this->Sex = $staffDetail->Sex;
+            $this->BirthPlace = $staffDetail->BirthPlace;
+            $this->Nationality = $staffDetail->Nationality;
+            $this->Address = $staffDetail->Address;
+            $this->ContactNumber = $staffDetail->ContactNumber;
+            $this->Email = $staffDetail->Email;
+            $this->AssignedRoleID = $staffDetail->RoleID;
+            $this->HiredDate = $staffDetail->HiredDate->toDateString();
+            $this->existingPhoto = $staffDetail->Photo;
+        }
     }
 
     public function updatedBirthDate($value): void
     {
         if ($value) {
             $this->Age = (string) Carbon::parse($value)->age;
+        }
+    }
+
+    /**
+     * Validate the photo the instant it's selected, so picking a non-image
+     * file is rejected immediately instead of waiting for Submit.
+     */
+    public function updatedPhoto(): void
+    {
+        try {
+            $this->validateOnly('Photo');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->Photo = null;
+            throw $e;
         }
     }
 
@@ -91,20 +135,17 @@ class StaffCreate extends Component
     {
         $validated = $this->validate();
 
-        $role = Role::findOrFail($this->AssignedRoleID);
-        $prefix = strtoupper(substr($role->RoleName, 0, 1));
+        if ($this->Photo) {
+            // Replace the old photo if we're editing and one already existed
+            if ($this->editingStaffId && $this->existingPhoto) {
+                Storage::disk('public')->delete($this->existingPhoto);
+            }
+            $photoPath = $this->Photo->store('staff-photos', 'public');
+        } else {
+            $photoPath = $this->existingPhoto;
+        }
 
-        $lastStaffId = StaffDetails::where('StaffID', 'like', $prefix . '%')
-            ->orderByDesc('StaffID')
-            ->value('StaffID');
-        $nextNumber = $lastStaffId ? ((int) substr($lastStaffId, 1)) + 1 : 1;
-        $staffId = $prefix . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
-
-        $photoPath = $this->Photo ? $this->Photo->store('staff-photos', 'public') : null;
-
-        StaffDetails::create([
-            'StaffID' => $staffId,
-            'UserID' => null, // Admin links this once they create the account
+        $fields = [
             'RoleID' => $this->AssignedRoleID,
             'LastName' => $this->LastName,
             'FirstName' => $this->FirstName,
@@ -119,7 +160,26 @@ class StaffCreate extends Component
             'ContactNumber' => $this->ContactNumber,
             'Email' => $this->Email,
             'HiredDate' => $this->HiredDate,
-        ]);
+        ];
+
+        if ($this->editingStaffId) {
+            StaffDetails::findOrFail($this->editingStaffId)->update($fields);
+        } else {
+            $role = Role::findOrFail($this->AssignedRoleID);
+            $prefix = strtoupper(substr($role->RoleName, 0, 1));
+
+            $lastStaffId = StaffDetails::where('StaffID', 'like', $prefix . '%')
+                ->orderByDesc('StaffID')
+                ->value('StaffID');
+            $nextNumber = $lastStaffId ? ((int) substr($lastStaffId, 1)) + 1 : 1;
+            $staffId = $prefix . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
+
+            StaffDetails::create([
+                'StaffID' => $staffId,
+                'UserID' => null, // Admin links this once they create the account
+                ...$fields,
+            ]);
+        }
 
         $this->redirectRoute('manager.staffs', navigate: true);
     }

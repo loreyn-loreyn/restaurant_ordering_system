@@ -1,12 +1,19 @@
 <div class="min-h-screen bg-white flex flex-col">
     <div class="flex items-center px-6 py-4 border-b shrink-0">
-        <a href="{{ route('cashier.dishes') }}" wire:navigate class="text-slate-600 text-base">&#8592; Back</a>
+        <a href="{{ $editingCartKey ? route('cashier.cart') : route('cashier.dishes') }}" wire:navigate class="text-slate-600 text-base">&#8592; Back</a>
+        @if ($editingCartKey)
+            <span class="ml-4 text-sm text-slate-400">Customizing item in your cart</span>
+        @endif
     </div>
 
     {{-- Scrollable content area, padded at the bottom so the fixed footer never covers content --}}
     <div class="flex-1 overflow-y-auto pb-32">
-        <div class="bg-slate-500 h-56 flex items-center justify-center text-white text-5xl">
-            &#128247;
+        <div class="bg-slate-500 h-56 flex items-center justify-center text-white text-5xl overflow-hidden">
+            @if ($dish->PhotoUrl)
+                <img src="{{ $dish->PhotoUrl }}" alt="{{ $dish->DishName }}" class="w-full h-full object-cover">
+            @else
+                &#128247;
+            @endif
         </div>
 
         <div class="p-6 max-w-2xl mx-auto">
@@ -14,17 +21,19 @@
             <p class="text-xl font-medium text-slate-700 mb-2">${{ number_format($dish->Price, 2) }}</p>
             <p class="text-base text-slate-500 mb-6">{{ $dish->Description }}</p>
 
-            <div class="mb-6">
-                <h2 class="text-lg font-semibold mb-2">Choice</h2>
-                <div class="grid grid-cols-2 gap-3">
-                    @foreach ($choices as $option)
-                        <label class="flex items-center gap-2 text-base">
-                            <input type="radio" wire:model="choice" value="{{ $option }}" class="w-4 h-4">
-                            {{ $option }}
-                        </label>
-                    @endforeach
+            @if (! empty($choices))
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold mb-2">Choice</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        @foreach ($choices as $option)
+                            <label class="flex items-center gap-2 text-base">
+                                <input type="radio" wire:model="choice" value="{{ $option }}" class="w-4 h-4">
+                                {{ $option }}
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
+            @endif
 
             <div class="mb-6">
                 <h2 class="text-lg font-semibold mb-2">Special Instructions</h2>
@@ -46,7 +55,7 @@
                     Proceed to Payment
                 </button>
                 <button wire:click="addToCart" class="bg-slate-600 hover:bg-slate-700 text-white px-5 py-3 rounded text-base">
-                    Add to Cart
+                    {{ $editingCartKey ? 'Update Item' : 'Add to Cart' }}
                 </button>
             </div>
 

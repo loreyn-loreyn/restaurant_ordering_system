@@ -1,4 +1,5 @@
 {{-- Auto-polls every 5s to stay in sync with kitchen --}}
+
 <div class="min-h-screen bg-slate-100 flex flex-col" wire:poll.5s>
 
     {{-- Header --}}

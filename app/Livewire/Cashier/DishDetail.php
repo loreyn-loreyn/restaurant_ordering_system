@@ -13,11 +13,21 @@ class DishDetail extends Component
 
     public int $quantity = 1;
 
-    public string $choice = 'Choice 1';
+    // Null when the dish has no choices configured; otherwise defaults
+    // to the first configured choice.
+    public ?string $choice = null;
 
     public string $specialInstruction = '';
 
-    public array $choices = ['Choice 1', 'Choice 2', 'Choice 3', 'Choice 4'];
+    // Populated from the dish's own Manager-configured choices (0-4).
+    // Empty means this dish has no choices, and the Choice section is
+    // hidden entirely on the detail page.
+    public array $choices = [];
+
+    // Set when arriving here via "?cartItem={key}" from the Cart page —
+    // means we're revisiting/customizing an existing cart line rather
+    // than adding a brand new one.
+    public ?string $editingCartKey = null;
 
     public function mount(Dish $dish)
     {
@@ -27,6 +37,25 @@ class DishDetail extends Component
         }
 
         $this->dish = $dish;
+        $this->choices = $dish->ChoiceList;
+        $this->choice = $this->choices[0] ?? null;
+
+        $cartKey = request()->query('cartItem');
+
+        if ($cartKey) {
+            foreach (session('cart_items', []) as $item) {
+                if ($item['key'] === $cartKey && $item['dish_id'] === $dish->DishID) {
+                    $this->editingCartKey = $cartKey;
+                    $this->quantity = $item['quantity'];
+                    $this->specialInstruction = $item['special_instruction'] ?? '';
+
+                    if (! empty($this->choices)) {
+                        $this->choice = $item['choice'] ?? $this->choices[0];
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     public function increment(): void
@@ -44,7 +73,7 @@ class DishDetail extends Component
     public function addToCart(): void
     {
         $this->saveItem();
-        $this->redirectRoute('cashier.dishes', navigate: true);
+        $this->redirectRoute($this->editingCartKey ? 'cashier.cart' : 'cashier.dishes', navigate: true);
     }
 
     public function proceedToPayment(): void
@@ -61,14 +90,32 @@ class DishDetail extends Component
     protected function saveItem(): void
     {
         $instruction = $this->specialInstruction !== '' ? $this->specialInstruction : null;
+        $choice = ! empty($this->choices) ? $this->choice : null;
         $items = session('cart_items', []);
+
+        // Revisiting an existing line from the cart — update it in place
+        // rather than merging into another line or creating a duplicate.
+        if ($this->editingCartKey) {
+            foreach ($items as &$item) {
+                if ($item['key'] === $this->editingCartKey) {
+                    $item['quantity'] = $this->quantity;
+                    $item['choice'] = $choice;
+                    $item['special_instruction'] = $instruction;
+                    break;
+                }
+            }
+            unset($item);
+
+            session(['cart_items' => $items]);
+            return;
+        }
 
         // Find an existing line with the same dish + choice + instruction
         $found = false;
         foreach ($items as &$item) {
             if (
                 $item['dish_id'] === $this->dish->DishID &&
-                $item['choice'] === $this->choice &&
+                $item['choice'] === $choice &&
                 $item['special_instruction'] === $instruction
             ) {
                 $item['quantity'] += $this->quantity;
@@ -83,9 +130,10 @@ class DishDetail extends Component
                 'key'                => uniqid(),
                 'dish_id'            => $this->dish->DishID,
                 'dish_name'          => $this->dish->DishName,
+                'photo_url'          => $this->dish->PhotoUrl,
                 'price'              => (float) $this->dish->Price,
                 'quantity'           => $this->quantity,
-                'choice'             => $this->choice,
+                'choice'             => $choice,
                 'special_instruction'=> $instruction,
             ];
         }

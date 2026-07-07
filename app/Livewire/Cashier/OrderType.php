@@ -4,7 +4,6 @@ namespace App\Livewire\Cashier;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -36,15 +35,6 @@ class OrderType extends Component
         ]);
 
         $this->redirectRoute('cashier.dishes', navigate: true);
-    }
-
-    public function signOut(): void
-    {
-        session()->forget(['cart_items', 'current_order_type', 'current_order_id']);
-        Auth::logout();
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-        $this->redirectRoute('login', navigate: true);
     }
 
     public function render()

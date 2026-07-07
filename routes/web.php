@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\UpdatePassword;
+use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Users as AdminUsers;
 use App\Livewire\Manager\Sales as ManagerSales;
 use App\Livewire\Manager\Dishes as ManagerDishes;
 use App\Livewire\Manager\Staffs as ManagerStaffs;
@@ -37,6 +39,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/update-password', UpdatePassword::class)->name('password.update');
 
     Route::post('/logout', function () {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+
+        if ($userId) {
+            \App\Models\LoginLog::where('UserID', $userId)
+                ->whereNull('LogoutAt')
+                ->latest('LoginAt')
+                ->first()
+                ?->update(['LogoutAt' => now()]);
+        }
+
+        // Clear any in-progress Cashier cart/order state. No-op for other
+        // roles since these session keys simply won't be set for them.
+        session()->forget(['cart_items', 'current_order_type', 'current_order_id', 'open_discount_modal']);
+
         \Illuminate\Support\Facades\Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
@@ -45,13 +61,8 @@ Route::middleware('auth')->group(function () {
 
     // Admin
     Route::middleware('role:Admin')->prefix('admin')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('admin.dashboard');
-
-        Route::get('/users', function () {
-            return view('admin.users');
-        })->name('admin.users');
+        Route::get('/dashboard', AdminDashboard::class)->name('admin.dashboard');
+        Route::get('/users', AdminUsers::class)->name('admin.users');
     });
 
     // Manager
@@ -62,6 +73,8 @@ Route::middleware('auth')->group(function () {
         // IMPORTANT: /staffs/create must be registered before /staffs/{staffDetail}
         // or Laravel will try to resolve "create" as a StaffID.
         Route::get('/staffs/create', ManagerStaffCreate::class)->name('manager.staff.create');
+        // Reuses the StaffCreate component in "edit mode" (same design, pre-filled).
+        Route::get('/staffs/{staffDetail}/edit', ManagerStaffCreate::class)->name('manager.staff.edit');
         Route::get('/staffs/{staffDetail}', ManagerStaffDetail::class)->name('manager.staff.detail');
     });
 

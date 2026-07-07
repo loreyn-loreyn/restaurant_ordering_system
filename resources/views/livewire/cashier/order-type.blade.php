@@ -22,8 +22,11 @@
     </div>
 
     <div class="px-6 pb-6">
-        <button wire:click="signOut" class="text-sm text-slate-400 hover:text-slate-600">
-            Sign Out
-        </button>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="text-sm text-slate-400 hover:text-slate-600">
+                Sign Out
+            </button>
+        </form>
     </div>
 </div>

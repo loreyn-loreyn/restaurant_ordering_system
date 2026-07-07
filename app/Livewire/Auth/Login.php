@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\LoginLog;
 use App\Models\User;
 use App\Support\RoleRedirect;
 use Illuminate\Support\Facades\Auth;
@@ -62,8 +63,26 @@ class Login extends Component
 
         // Step 5: figure out the role of the now-authenticated user and
         // redirect them to that role's landing page.
-        $authUser = Auth::user()->load('role');
+        $authUser = Auth::user()->load('role', 'staffDetails');
         $roleName = $authUser->role?->RoleName;
+
+        // Record the login for the Admin "User Logs" view. LogoutAt stays
+        // null until the /logout route (or an Admin deactivating the
+        // account) closes it out.
+        LoginLog::create([
+            'UserID' => $authUser->UserID,
+            'LoginAt' => now(),
+        ]);
+
+        // Step 6: if they're still logging in with their default (birthdate)
+        // password, force them to update-password before letting them
+        // reach their role's landing page.
+        $defaultPassword = $authUser->staffDetails?->BirthDate?->format('mdY');
+
+        if ($defaultPassword !== null && $this->password === $defaultPassword) {
+            $this->redirectRoute('password.update', navigate: true);
+            return;
+        }
 
         $this->redirectRoute(RoleRedirect::routeFor($roleName), navigate: true);
     }

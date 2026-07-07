@@ -3,8 +3,9 @@
 namespace App\Livewire;
 
 use App\Models\Order;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\Attributes\Layout;
+
 
 #[Layout('layouts.app')]
 class CustomerDisplay extends Component

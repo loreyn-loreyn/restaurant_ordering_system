@@ -23,8 +23,15 @@
         <div class="grid grid-cols-3 gap-4">
             @forelse ($dishes as $dish)
                 <div
-                    wire:click="openEdit({{ $dish->DishID }})"
-                    class="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col transition
+                    x-data="{ pressTimer: null, longPressed: false }"
+                    @mousedown="longPressed = false; pressTimer = setTimeout(() => { longPressed = true; $wire.openActionMenu({{ $dish->DishID }}) }, 600)"
+                    @mouseup="clearTimeout(pressTimer)"
+                    @mouseleave="clearTimeout(pressTimer)"
+                    @touchstart.passive="longPressed = false; pressTimer = setTimeout(() => { longPressed = true; $wire.openActionMenu({{ $dish->DishID }}) }, 600)"
+                    @touchend="clearTimeout(pressTimer)"
+                    @contextmenu.prevent
+                    @click="if (! longPressed) { $wire.openEdit({{ $dish->DishID }}) }"
+                    class="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col transition select-none
                            {{ ! $dish->Availability ? 'opacity-50 pointer-events-none' : 'cursor-pointer hover:shadow-md' }}"
                 >
                     <div class="bg-slate-200 h-28 flex items-center justify-center text-slate-400 text-3xl shrink-0 overflow-hidden">
@@ -62,9 +69,34 @@
         </button>
     </div>
 
+    {{-- ── Long-press action menu (Edit / Delete) ─────────────────── --}}
+    @if ($actionMenuDish)
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" wire:click.self="closeActionMenu">
+            <div class="bg-white rounded-lg shadow-xl w-72 p-4">
+                <p class="text-sm font-semibold text-slate-800 mb-4 text-center">{{ $actionMenuDish->DishName }}</p>
+                <div class="space-y-2">
+                    <button wire:click="chooseEditFromMenu"
+                            class="w-full bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium py-2 rounded transition">
+                        Edit
+                    </button>
+                    <button wire:click="chooseDeleteFromMenu"
+                            class="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 rounded transition">
+                        Delete
+                    </button>
+                    <button wire:click="closeActionMenu"
+                            class="w-full bg-slate-100 text-slate-700 text-sm font-medium py-2 rounded hover:bg-slate-200 transition">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- ── Create / Edit modal ────────────────────────────────────── --}}
     @if ($showModal)
-        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" wire:click.self="discard">
+        {{-- Note: no wire:click.self="discard" here on purpose — the modal must
+             only close via the explicit Discard or Submit buttons below. --}}
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh]">
 
                 <div class="flex items-center justify-between px-5 py-3 border-b shrink-0">
@@ -88,7 +120,7 @@
                             @endif
                         </div>
                         <div class="flex-1">
-                            <input type="file" wire:model="Photo" accept="image/*"
+                            <input type="file" wire:model="Photo" accept="image/png, image/jpeg, image/jpg"
                                    class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:bg-slate-100 file:text-slate-600 file:text-xs">
                             <div wire:loading wire:target="Photo" class="text-xs text-slate-400 mt-1">Uploading...</div>
                             @error('Photo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -135,15 +167,37 @@
                             @error('DishCode') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1">Choices (optional, up to 4)</label>
+                        <div class="space-y-2">
+                            @foreach ($choices as $index => $choice)
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" wire:model="choices.{{ $index }}" maxlength="100"
+                                               placeholder="e.g. Spicy"
+                                               class="flex-1 rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                                        <button type="button" wire:click="removeChoice({{ $index }})"
+                                                class="text-slate-400 hover:text-red-500 text-xl leading-none px-1">&times;</button>
+                                    </div>
+                                    @error('choices.' . $index) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                                </div>
+                            @endforeach
+                        </div>
+                        @if (count($choices) < 4)
+                            <button type="button" wire:click="addChoice"
+                                    class="mt-2 text-xs text-slate-600 hover:text-slate-800 font-medium">
+                                + Add choice
+                            </button>
+                        @endif
+                        @error('choices') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        @if (empty($choices))
+                            <p class="text-xs text-slate-400 mt-1">No choices added — the Choice section will be hidden for this dish.</p>
+                        @endif
+                    </div>
                 </form>
 
                 <div class="px-5 py-4 border-t shrink-0 flex gap-3">
-                    @if ($editingDishId)
-                        <button type="button" wire:click="deleteDish" wire:confirm="Delete this dish? This cannot be undone."
-                                class="text-red-500 hover:text-red-600 text-sm font-medium px-3">
-                            Delete
-                        </button>
-                    @endif
                     <button type="button" wire:click="discard"
                             class="flex-1 bg-slate-100 text-slate-700 text-sm font-medium py-2 rounded hover:bg-slate-200 transition">
                         Discard
@@ -152,6 +206,28 @@
                             class="flex-1 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium py-2 rounded transition">
                         <span wire:loading.remove wire:target="save">Submit</span>
                         <span wire:loading wire:target="save">Saving...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ── Long-press delete confirmation ─────────────────────────── --}}
+    @if ($pendingDeleteDish)
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" wire:click.self="cancelDelete">
+            <div class="bg-white rounded-lg shadow-xl w-80 p-5 text-center">
+                <p class="text-sm text-slate-700 mb-1">Delete this dish?</p>
+                <p class="text-sm font-semibold text-slate-800 mb-4">{{ $pendingDeleteDish->DishName }}</p>
+                <p class="text-xs text-slate-400 mb-4">This cannot be undone.</p>
+                <div class="flex gap-3">
+                    <button wire:click="cancelDelete"
+                            class="flex-1 bg-slate-100 text-slate-700 text-sm font-medium py-2 rounded hover:bg-slate-200 transition">
+                        Cancel
+                    </button>
+                    <button wire:click="deleteDish" wire:loading.attr="disabled" wire:target="deleteDish"
+                            class="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 rounded transition">
+                        <span wire:loading.remove wire:target="deleteDish">Delete</span>
+                        <span wire:loading wire:target="deleteDish">Deleting...</span>
                     </button>
                 </div>
             </div>

@@ -3,7 +3,7 @@
     {{-- ── Top bar: period pills ──────────────────────────────────── --}}
     <div class="flex items-center px-6 py-3 border-b bg-white shrink-0">
         <div class="flex gap-2 flex-wrap">
-            @foreach (['hourly' => 'Hourly', 'daily' => 'Daily', 'weekly' => 'Weekly', 'monthly' => 'Monthly', 'yearly' => 'Yearly'] as $key => $label)
+            @foreach (['daily' => 'Daily', 'weekly' => 'Weekly', 'monthly' => 'Monthly', 'yearly' => 'Yearly'] as $key => $label)
                 <button wire:click="setPeriod('{{ $key }}')"
                         class="px-4 py-1.5 rounded-full text-sm font-medium transition
                                {{ $period === $key ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
