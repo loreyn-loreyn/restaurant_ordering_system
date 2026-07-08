@@ -59,7 +59,14 @@ class Login extends Component
             return;
         }
 
-        request()->session()->regenerate();
+        // Use the session() helper (resolves from the container) rather than
+        // request()->session(): Livewire::test() invokes component methods
+        // through its own internal request broker, which builds a fresh
+        // Request instance that never passes through StartSession
+        // middleware. request()->session() would throw "Session store not
+        // set on request" in that context. session() always resolves the
+        // same underlying store, in both real HTTP requests and tests.
+        session()->regenerate();
 
         // Step 5: figure out the role of the now-authenticated user and
         // redirect them to that role's landing page.

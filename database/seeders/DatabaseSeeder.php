@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -10,6 +11,12 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Orders/payments/attendance below are dated relative to "now" (rather
+        // than a fixed calendar date) so seeded demo data always falls inside
+        // reports' default windows (e.g. Sales.php's default 'daily' period
+        // only looks back 7 days) no matter when the seeder or test suite runs.
+        $orderDay = Carbon::now()->subDays(2)->toDateString();
+        $laterOrderDay = Carbon::now()->subDay()->toDateString();
         // ---------------------------------------------------------
         // roles
         // ---------------------------------------------------------
@@ -136,17 +143,17 @@ class DatabaseSeeder extends Seeder
         // orders (PaymentID left null for now; orders <-> payments are circular)
         // ---------------------------------------------------------
         DB::table('orders')->insert([
-            ['OrderID' => 1, 'UserID' => 3, 'PaymentID' => null, 'DiscountID' => null, 'OrderType' => true, 'OrderStatus' => true, 'OrderDate' => '2026-06-28', 'TotalAmount' => 380.00, 'Change' => 20.00],
-            ['OrderID' => 2, 'UserID' => 4, 'PaymentID' => null, 'DiscountID' => null, 'OrderType' => false, 'OrderStatus' => true, 'OrderDate' => '2026-06-28', 'TotalAmount' => 175.00, 'Change' => 25.00],
-            ['OrderID' => 3, 'UserID' => 3, 'PaymentID' => null, 'DiscountID' => null, 'OrderType' => true, 'OrderStatus' => false, 'OrderDate' => '2026-06-29', 'TotalAmount' => 120.00, 'Change' => 0.00],
+            ['OrderID' => 1, 'UserID' => 3, 'PaymentID' => null, 'DiscountID' => null, 'OrderType' => true, 'OrderStatus' => true, 'OrderDate' => $orderDay, 'TotalAmount' => 380.00, 'Change' => 20.00],
+            ['OrderID' => 2, 'UserID' => 4, 'PaymentID' => null, 'DiscountID' => null, 'OrderType' => false, 'OrderStatus' => true, 'OrderDate' => $orderDay, 'TotalAmount' => 175.00, 'Change' => 25.00],
+            ['OrderID' => 3, 'UserID' => 3, 'PaymentID' => null, 'DiscountID' => null, 'OrderType' => true, 'OrderStatus' => false, 'OrderDate' => $laterOrderDay, 'TotalAmount' => 120.00, 'Change' => 0.00],
         ]);
 
         // ---------------------------------------------------------
         // payments
         // ---------------------------------------------------------
         DB::table('payments')->insert([
-            ['PaymentID' => 1, 'OrderID' => 1, 'StaffID' => 'C002', 'Method' => 'Cash', 'RenderedAmount' => 400.00, 'Reference' => null, 'TransactionDate' => '2026-06-28'],
-            ['PaymentID' => 2, 'OrderID' => 2, 'StaffID' => 'C005', 'Method' => 'GCash', 'RenderedAmount' => 175.00, 'Reference' => 100002, 'TransactionDate' => '2026-06-28'],
+            ['PaymentID' => 1, 'OrderID' => 1, 'StaffID' => 'C002', 'Method' => 'Cash', 'RenderedAmount' => 400.00, 'Reference' => null, 'TransactionDate' => $orderDay],
+            ['PaymentID' => 2, 'OrderID' => 2, 'StaffID' => 'C005', 'Method' => 'GCash', 'RenderedAmount' => 175.00, 'Reference' => 100002, 'TransactionDate' => $orderDay],
         ]);
  
         DB::table('orders')->where('OrderID', 1)->update(['PaymentID' => 1]);
@@ -170,11 +177,11 @@ class DatabaseSeeder extends Seeder
         // attendances
         // ---------------------------------------------------------
         DB::table('attendances')->insert([
-            ['AttendanceID' => 1, 'StaffID' => 'C002', 'AttendanceDate' => '2026-06-28 08:00:00', 'Status' => 'P', 'TimeIn' => '08:00:00', 'TimeOut' => '17:00:00'],
-            ['AttendanceID' => 2, 'StaffID' => 'C005', 'AttendanceDate' => '2026-06-28 08:05:00', 'Status' => 'P', 'TimeIn' => '08:05:00', 'TimeOut' => '17:10:00'],
-            ['AttendanceID' => 3, 'StaffID' => 'K003', 'AttendanceDate' => '2026-06-28 07:45:00', 'Status' => 'P', 'TimeIn' => '07:45:00', 'TimeOut' => '16:45:00'],
-            ['AttendanceID' => 4, 'StaffID' => 'K007', 'AttendanceDate' => '2026-06-28 00:00:00', 'Status' => 'A', 'TimeIn' => null, 'TimeOut' => null],
-            ['AttendanceID' => 5, 'StaffID' => 'M004', 'AttendanceDate' => '2026-06-28 07:30:00', 'Status' => 'P', 'TimeIn' => '07:30:00', 'TimeOut' => '18:00:00'],
+            ['AttendanceID' => 1, 'StaffID' => 'C002', 'AttendanceDate' => $orderDay . ' 08:00:00', 'Status' => 'P', 'TimeIn' => '08:00:00', 'TimeOut' => '17:00:00'],
+            ['AttendanceID' => 2, 'StaffID' => 'C005', 'AttendanceDate' => $orderDay . ' 08:05:00', 'Status' => 'P', 'TimeIn' => '08:05:00', 'TimeOut' => '17:10:00'],
+            ['AttendanceID' => 3, 'StaffID' => 'K003', 'AttendanceDate' => $orderDay . ' 07:45:00', 'Status' => 'P', 'TimeIn' => '07:45:00', 'TimeOut' => '16:45:00'],
+            ['AttendanceID' => 4, 'StaffID' => 'K007', 'AttendanceDate' => $orderDay . ' 00:00:00', 'Status' => 'A', 'TimeIn' => null, 'TimeOut' => null],
+            ['AttendanceID' => 5, 'StaffID' => 'M004', 'AttendanceDate' => $orderDay . ' 07:30:00', 'Status' => 'P', 'TimeIn' => '07:30:00', 'TimeOut' => '18:00:00'],
         ]);
 
         $this->command->info('Seeding complete. Login credentials:');

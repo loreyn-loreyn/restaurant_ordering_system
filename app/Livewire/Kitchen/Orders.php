@@ -101,7 +101,7 @@ class Orders extends Component
 
         // First 5 shown in full; if there are more, the 6th slot is a dimmed
         // overflow card showing the 6th order's data + a "+N" counter.
-        $overflow  = max(0, $totalOrders - 5);
+        $overflow  = max(0, $totalOrders - 6);
         $displayed = $allOrders->take(min($totalOrders, 6));
 
         // If the popup's order disappeared (all items became S via poll), close it.

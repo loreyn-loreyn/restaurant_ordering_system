@@ -4,6 +4,7 @@ namespace App\Livewire\Cashier;
 
 use App\Models\Dish;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -29,6 +30,15 @@ class DishDetail extends Component
     // than adding a brand new one.
     public ?string $editingCartKey = null;
 
+    // Bound to the "?cartItem=" query string. Using #[Url] instead of
+    // reading request()->query('cartItem') directly in mount() means
+    // Livewire hydrates this the same way whether the component is
+    // loaded from a real HTTP request or from Livewire::test(), which
+    // builds its own internal request per call and never actually feeds
+    // manual request()->query mutations into mount().
+    #[Url]
+    public ?string $cartItem = null;
+
     public function mount(Dish $dish)
     {
         if (! session('current_order_type')) {
@@ -40,7 +50,7 @@ class DishDetail extends Component
         $this->choices = $dish->ChoiceList;
         $this->choice = $this->choices[0] ?? null;
 
-        $cartKey = request()->query('cartItem');
+        $cartKey = $this->cartItem;
 
         if ($cartKey) {
             foreach (session('cart_items', []) as $item) {

@@ -96,7 +96,7 @@ class Sales extends Component
 
         $orders = Order::with(['items.dish.category', 'discount'])
             ->where('OrderStatus', true)
-            ->whereBetween('OrderDate', [$start->toDateString(), $end->toDateString()])
+            ->whereBetween('OrderDate', [$start->toDateTimeString(), $end->toDateTimeString()])
             ->get();
 
         $totalSales = (float) $orders->sum('TotalAmount');
