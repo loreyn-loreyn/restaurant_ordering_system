@@ -23,6 +23,9 @@ return new class extends Migration
             $table->boolean('OrderType');
             $table->boolean('OrderStatus')->default(false);
             $table->date('OrderDate');
+            // Needed for the Manager dashboard's "Hourly" sales breakdown —
+            // OrderDate alone (date only) can't be grouped by hour.
+            $table->time('OrderTime')->nullable();
             $table->decimal('TotalAmount', 10, 2);
             $table->decimal('Change', 10, 2);
         });

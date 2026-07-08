@@ -3,9 +3,8 @@
 namespace App\Livewire\Cashier;
 
 use App\Models\Dish;
-use App\Models\Order;
-use App\Models\OrderItem;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -15,20 +14,58 @@ class DishDetail extends Component
 
     public int $quantity = 1;
 
-    public string $choice = 'Choice 1';
+    // Null when the dish has no choices configured; otherwise defaults
+    // to the first configured choice.
+    public ?string $choice = null;
 
     public string $specialInstruction = '';
 
-    public array $choices = ['Choice 1', 'Choice 2', 'Choice 3', 'Choice 4'];
+    // Populated from the dish's own Manager-configured choices (0-4).
+    // Empty means this dish has no choices, and the Choice section is
+    // hidden entirely on the detail page.
+    public array $choices = [];
+
+    // Set when arriving here via "?cartItem={key}" from the Cart page —
+    // means we're revisiting/customizing an existing cart line rather
+    // than adding a brand new one.
+    public ?string $editingCartKey = null;
+
+    // Bound to the "?cartItem=" query string. Using #[Url] instead of
+    // reading request()->query('cartItem') directly in mount() means
+    // Livewire hydrates this the same way whether the component is
+    // loaded from a real HTTP request or from Livewire::test(), which
+    // builds its own internal request per call and never actually feeds
+    // manual request()->query mutations into mount().
+    #[Url]
+    public ?string $cartItem = null;
 
     public function mount(Dish $dish)
     {
-        if (! session('current_order_id')) {
+        if (! session('current_order_type')) {
             $this->redirectRoute('cashier.order-type', navigate: true);
             return;
         }
 
         $this->dish = $dish;
+        $this->choices = $dish->ChoiceList;
+        $this->choice = $this->choices[0] ?? null;
+
+        $cartKey = $this->cartItem;
+
+        if ($cartKey) {
+            foreach (session('cart_items', []) as $item) {
+                if ($item['key'] === $cartKey && $item['dish_id'] === $dish->DishID) {
+                    $this->editingCartKey = $cartKey;
+                    $this->quantity = $item['quantity'];
+                    $this->specialInstruction = $item['special_instruction'] ?? '';
+
+                    if (! empty($this->choices)) {
+                        $this->choice = $item['choice'] ?? $this->choices[0];
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     public function increment(): void
@@ -43,59 +80,75 @@ class DishDetail extends Component
         }
     }
 
-    /**
-     * Adds the current selection to the cart (order_items) and
-     * sends the cashier back to the menu they came from.
-     */
     public function addToCart(): void
     {
         $this->saveItem();
-
-        $this->redirectRoute('cashier.dishes', navigate: true);
+        $this->redirectRoute($this->editingCartKey ? 'cashier.cart' : 'cashier.dishes', navigate: true);
     }
 
-    /**
-     * Adds the current selection to the cart, then jumps straight to the
-     * Cart page with the Discounts & Comps modal opened, mirroring the
-     * "buy just this one item" flow from the wireframes.
-     */
     public function proceedToPayment(): void
     {
         $this->saveItem();
-
         session(['open_discount_modal' => true]);
-
         $this->redirectRoute('cashier.cart', navigate: true);
     }
 
+    /**
+     * Saves the item into the session cart only — no DB writes here.
+     * The cart is a list of arrays stored under 'cart_items' in session.
+     */
     protected function saveItem(): void
     {
-        $orderId = session('current_order_id');
-
-        // If this dish (with the same choice) is already in the cart, bump the quantity
-        // instead of creating a duplicate line.
         $instruction = $this->specialInstruction !== '' ? $this->specialInstruction : null;
+        $choice = ! empty($this->choices) ? $this->choice : null;
+        $items = session('cart_items', []);
 
-        $existing = OrderItem::where('OrderID', $orderId)
-            ->where('DishID', $this->dish->DishID)
-            ->where('Choice', $this->choice)
-            ->where('SpecialInstruction', $instruction)
-            ->first();
+        // Revisiting an existing line from the cart — update it in place
+        // rather than merging into another line or creating a duplicate.
+        if ($this->editingCartKey) {
+            foreach ($items as &$item) {
+                if ($item['key'] === $this->editingCartKey) {
+                    $item['quantity'] = $this->quantity;
+                    $item['choice'] = $choice;
+                    $item['special_instruction'] = $instruction;
+                    break;
+                }
+            }
+            unset($item);
 
-        if ($existing) {
-            $existing->update([
-                'Quantity' => $existing->Quantity + $this->quantity,
-            ]);
-        } else {
-            OrderItem::create([
-                'OrderID' => $orderId,
-                'DishID' => $this->dish->DishID,
-                'Quantity' => $this->quantity,
-                'ItemStatus' => 'R', // received into the cart
-                'Choice' => $this->choice,
-                'SpecialInstruction' => $this->specialInstruction !== '' ? $this->specialInstruction : null,
-            ]);
+            session(['cart_items' => $items]);
+            return;
         }
+
+        // Find an existing line with the same dish + choice + instruction
+        $found = false;
+        foreach ($items as &$item) {
+            if (
+                $item['dish_id'] === $this->dish->DishID &&
+                $item['choice'] === $choice &&
+                $item['special_instruction'] === $instruction
+            ) {
+                $item['quantity'] += $this->quantity;
+                $found = true;
+                break;
+            }
+        }
+        unset($item);
+
+        if (! $found) {
+            $items[] = [
+                'key'                => uniqid(),
+                'dish_id'            => $this->dish->DishID,
+                'dish_name'          => $this->dish->DishName,
+                'photo_url'          => $this->dish->PhotoUrl,
+                'price'              => (float) $this->dish->Price,
+                'quantity'           => $this->quantity,
+                'choice'             => $choice,
+                'special_instruction'=> $instruction,
+            ];
+        }
+
+        session(['cart_items' => $items]);
     }
 
     public function render()

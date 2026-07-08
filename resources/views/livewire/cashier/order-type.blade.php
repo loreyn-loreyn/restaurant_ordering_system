@@ -20,4 +20,13 @@
             Take-out
         </button>
     </div>
+
+    <div class="px-6 pb-6">
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="text-sm text-slate-400 hover:text-slate-600">
+                Sign Out
+            </button>
+        </form>
+    </div>
 </div>

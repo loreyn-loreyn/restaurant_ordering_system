@@ -12,6 +12,10 @@ class User extends Authenticatable
     protected $table = 'users';
     protected $primaryKey = 'UserID';
 
+    // The `users` table has no created_at/updated_at columns —
+    // DateIssued already tracks when the account was created.
+    public $timestamps = false;
+
     protected $fillable = [
         'RoleID',
         'UserName',

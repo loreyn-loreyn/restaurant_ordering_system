@@ -61,13 +61,13 @@
                     <span wire:loading.remove wire:target="login">Login</span>
                     <span wire:loading wire:target="login">Logging in...</span>
                 </button>
-
-                <div class="text-center">
-                    <a href="{{ route('password.forgot') }}" wire:navigate class="text-sm text-slate-500 hover:underline">
-                        Forgot password
-                    </a>
-                </div>
             </form>
+
+                <a href="{{ route('customer.display') }}"
+                    class="absolute bottom-4 right-4 text-xs text-slate-400 hover:text-slate-600">
+                    Customer Display
+                </a>
         </div>
     </div>
 </div>
+
